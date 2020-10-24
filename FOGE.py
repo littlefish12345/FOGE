@@ -121,7 +121,7 @@ def fogeMainLoop():
     glfwTerminate()
 
 class fogeModel: #模型
-    def __init__(self,vertex_list=[],indices=[],texture_pos=[],texture_path='',usage=GL_STATIC_DRAW,tex_warp_type=GL_REPEAT,tex_filter_type=GL_LINEAR):
+    def __init__(self,vertex_list=[],indices=[],texture_pos=[],texture_path='',usage=GL_STATIC_DRAW,tex_wrap_type=GL_REPEAT,tex_filter_type=GL_LINEAR,tex_color_type=GL_RGB):
         global draw_obj
         draw_obj.append(self)
         self.show = False
@@ -129,7 +129,7 @@ class fogeModel: #模型
         if vertex_list and indices and texture_pos and texture_path:
             self.show = True
             self.loadModel(vertex_list,indices,usage)
-            self.loadTexture(texture_pos,texture_path,usage,tex_warp_type,tex_filter_type)
+            self.loadTexture(texture_pos,texture_path,usage,tex_wrap_type,tex_filter_type,tex_color_type)
 
     def loadModel(self,vertex_list,indices,usage=GL_STATIC_DRAW): #加载模型
         global shader
@@ -164,7 +164,7 @@ class fogeModel: #模型
         glBindBuffer(GL_ARRAY_BUFFER,0) #解绑VBO
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0) #解绑EBO
 
-    def loadTexture(self,texture_pos,texture_path,usage=GL_STATIC_DRAW,tex_warp_type=GL_REPEAT,tex_filter_type=GL_LINEAR): #加载贴图
+    def loadTexture(self,texture_pos,texture_path,usage=GL_STATIC_DRAW,tex_wrap_type=GL_REPEAT,tex_filter_type=GL_LINEAR,tex_color_type=GL_RGB): #加载贴图
         global shader
         tex_location = shader.get_location(b'inTexPos') #获取贴图坐标locaion
 
@@ -185,16 +185,16 @@ class fogeModel: #模型
         glBindVertexArray(0) #解绑VAO
         glBindBuffer(GL_ARRAY_BUFFER,0) #解绑VBO
 
-        img = Image.open(texture_path) #加载贴图文件
+        img = Image.open(texture_path).transpose(Image.FLIP_TOP_BOTTOM) #加载贴图文件
         img_data = numpy.array(list(img.getdata()),numpy.int8) #生成贴图数据
         self.texture = glGenTextures(1) #生成贴图对象
         glBindTexture(GL_TEXTURE_2D,self.texture)
 
-        glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,tex_warp_type) #设置贴图环绕方式
-        glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,tex_warp_type)
+        glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,tex_wrap_type) #设置贴图环绕方式
+        glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,tex_wrap_type)
         glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,tex_filter_type) #设置贴图过滤方式
         glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,tex_filter_type)
 
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,img.size[0],img.size[1],0,GL_RGBA,GL_UNSIGNED_BYTE,img_data) #传输贴图数据
+        glTexImage2D(GL_TEXTURE_2D,0,tex_color_type,img.size[0],img.size[1],0,tex_color_type,GL_UNSIGNED_BYTE,img_data) #传输贴图数据
 
         glBindTexture(GL_TEXTURE_2D,0) #解绑提额图对象

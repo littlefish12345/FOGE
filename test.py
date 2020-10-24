@@ -1,4 +1,4 @@
-from FOGE_rewrite import *
+from FOGE import *
 
 fogeInit(500,500,'qwe')
 
@@ -19,7 +19,7 @@ tp = [[0,1],[1,1],[1,0],[0,0],
 
 t_path = 'dirt.png'
 
-model = fogeModel(vs,is_,tp,t_path,tex_filter_type=GL_NEAREST)
+model = fogeModel(vs,is_,tp,t_path,tex_filter_type=GL_NEAREST,tex_color_type=GL_RGBA)
 #model.loadTextureFile()
 
 fogeMainLoop()
