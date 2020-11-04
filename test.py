@@ -2,24 +2,24 @@ from FOGE import *
 
 fogeInit(500,500,'qwe')
 
+def frame_callback_function(time):
+    global model
+    model.rotate('x',1)
+    model.rotate('y',1)
+    model.rotate('z',1)
+
 fogeRegisterKey(GLFW_KEY_ESCAPE,GLFW_PRESS,fogeClose)
+fogeRegisterFrameCallack(frame_callback_function)
 
-vs = [[-0.5,0.5,0.5],[0.5,0.5,0.5],[0.5,-0.5,0.5],[-0.5,-0.5,0.5],
-      [-0.5,0.5,-0.5],[0.5,0.5,-0.5],[0.5,-0.5,-0.5],[-0.5,-0.5,-0.5]]
+vs = [[-0.5,0.5,0],[0.5,0.5,0],[0.5,-0.5,0],[-0.5,-0.5,0]]
 
-is_ = [[0,1,3],[1,2,3],
-       [4,5,7],[5,6,7],
-       [0,4,7],[0,3,7],
-       [1,5,6],[1,2,6],
-       [0,1,5],[0,4,5],
-       [3,2,6],[3,7,6]]
+is_ = [[0,1,2],[2,3,0]]
 
-tp = [[0,1],[1,1],[1,0],[0,0],
-      [0,1],[1,1],[1,0],[0,0]]
+tp = [[0,1],[1,1],[1,0],[0,0]]
 
-t_path = 'dirt.png'
+t_path = 'bedrock.png'
 
 model = fogeModel(vs,is_,tp,t_path,tex_filter_type=GL_NEAREST,tex_color_type=GL_RGBA)
-#model.loadTextureFile()
+#model.translate('x',0.5)
 
 fogeMainLoop()

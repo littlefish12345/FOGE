@@ -1,15 +1,17 @@
 from OpenGL.GL import *
 from glfw.GLFW import *
+import glm
 from PIL import Image
 import numpy
 
 window = None
 key_function_map = {}
 draw_obj = []
+frame_callback_function = None
 
 class fogeError(Exception): #错误类
     def __init__(self,error_str):
-        self.error_str=_error_str
+        self.error_str= error_str
     def __str__(self):
         return self.error_str
 
@@ -18,7 +20,7 @@ def __fogeDrawObj__():
     for obj in draw_obj:
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D,obj.texture)
-        shader.use()
+        shader.set_uniform_mat4(obj.translation_loc,obj.translation)
         glBindVertexArray(obj.VAO)
         glDrawElements(GL_TRIANGLES,obj.indices_num,GL_UNSIGNED_INT,None)
         glBindVertexArray(0)
@@ -28,6 +30,11 @@ def __fogeProcessKeyInput__(window): #处理键盘输入
     for key in key_function_map.keys():
         if glfwGetKey(window,key) == key_function_map[key][0]:
             key_function_map[key][1]()
+
+def __fogeFrameCallback__(): #处理帧回调
+    global frame_callback_function
+    if frame_callback_function:
+        frame_callback_function(glfwGetTime())
 
 class __fogeShader__: #着色器类
     def __init__(self,vertex_shader_path,fragment_shader_path):
@@ -85,16 +92,18 @@ class __fogeShader__: #着色器类
     def get_location(self,name): #获取顶点着色器locaion
         return glGetAttribLocation(self.shader_program,name)
 
-def fogeClose(): #关闭foge
-    global window
-    glfwSetWindowShouldClose(window,True)
+    def get_uniform_location(self,name): #获取uniform的location
+        return glGetUniformLocation(self.shader_program,name)
 
-def fogeRegisterKey(key,status,function): #注册键响应回调函数
-    global key_function_map
-    key_function_map[key] = (status,function)
+    def set_uniform_mat4(self,uniform_location,matrix):
+        glUniformMatrix4fv(uniform_location,1,GL_FALSE,glm.value_ptr(matrix))
 
 def fogeInit(width,height,title):
     global window,shader
+    
+    def window_size_change_callback(window,width,height):
+        glViewport(0,0,width,height)
+    
     if not glfwInit(): #初始化glfw
         raise fogeError('Unable to load glfw')
 
@@ -103,28 +112,43 @@ def fogeInit(width,height,title):
         glfwTerminate()
         raise fogeError('Unable to create the window')
     glfwMakeContextCurrent(window)
+    glfwSetFramebufferSizeCallback(window,window_size_change_callback)
 
     shader = __fogeShader__('./shader/Vertex.glsl','./shader/Fragment.glsl')
 
 def fogeMainLoop():
-    global window
+    global window,shader
     #glPolygonMode(GL_FRONT_AND_BACK,GL_LINE)
     glClearColor(0,0,0,1)
     while not glfwWindowShouldClose(window):
-        width,height = glfwGetFramebufferSize(window)
-        glViewport(0,0,width,height)
         __fogeProcessKeyInput__(window)
+        __fogeFrameCallback__()
         glClear(GL_COLOR_BUFFER_BIT)
+        shader.use()
         __fogeDrawObj__()
         glfwSwapBuffers(window)
         glfwPollEvents()
     glfwTerminate()
 
+def fogeClose(): #关闭foge
+    global window
+    glfwSetWindowShouldClose(window,True)
+
+def fogeRegisterKey(key,status,function): #注册键响应回调函数
+    global key_function_map
+    key_function_map[key] = (status,function)
+
+def fogeRegisterFrameCallack(function): #注册每帧的响应回调
+    global frame_callback_function
+    frame_callback_function = function
+
 class fogeModel: #模型
     def __init__(self,vertex_list=[],indices=[],texture_pos=[],texture_path='',usage=GL_STATIC_DRAW,tex_wrap_type=GL_REPEAT,tex_filter_type=GL_LINEAR,tex_color_type=GL_RGB):
-        global draw_obj
+        global draw_obj,shader
         draw_obj.append(self)
         self.show = False
+        self.translation = glm.mat4(1)
+        self.translation_loc = shader.get_uniform_location(b'transform')
         self.VAO = glGenVertexArrays(1) #生成VAO
         if vertex_list and indices and texture_pos and texture_path:
             self.show = True
@@ -198,3 +222,19 @@ class fogeModel: #模型
         glTexImage2D(GL_TEXTURE_2D,0,tex_color_type,img.size[0],img.size[1],0,tex_color_type,GL_UNSIGNED_BYTE,img_data) #传输贴图数据
 
         glBindTexture(GL_TEXTURE_2D,0) #解绑提额图对象
+
+    def rotate(self,axis,deg):
+        if axis == 'x':
+            self.translation = glm.rotate(self.translation,glm.radians(deg),glm.vec3(1,0,0))
+        elif axis == 'y':
+            self.translation = glm.rotate(self.translation,glm.radians(deg),glm.vec3(0,1,0))
+        elif axis == 'z':
+            self.translation = glm.rotate(self.translation,glm.radians(deg),glm.vec3(0,0,1))
+
+    def translate(self,axis,des):
+        if axis == 'x':
+            self.translation = glm.translate(self.translation,glm.vec3(des,0,0))
+        if axis == 'y':
+            self.translation = glm.translate(self.translation,glm.vec3(0,des,0))
+        if axis == 'z':
+            self.translation = glm.translate(self.translation,glm.vec3(0,0,des))
